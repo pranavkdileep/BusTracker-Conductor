@@ -85,7 +85,7 @@ fun BottomNav(navController: NavController) {
         val currentRoute = backStackEntry.value?.destination?.route
         items.forEach { item ->
             BottomNavigationItem(
-                icon = { Icon(item.icon, contentDescription = null, modifier = Modifier.padding(10.dp)) },
+                icon = { Icon(item.icon, contentDescription = null, modifier = Modifier.padding(8.dp)) },
                 label = { Text(item.titie) },
                 selected = currentRoute == item.route,
                 selectedContentColor = colorResource(id = R.color.Mid),
