@@ -1,6 +1,7 @@
 package com.pranavkd.bustracker_conductor.screens
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -62,6 +63,7 @@ fun LoginScreen(
                                     errorMessage = error
                                 }
                                 if(response != null) {
+                                    Log.e("LoginScreen", "Token: $response")
                                     sharedPreferences.edit().putString("token", response).apply()
                                     loginSuccess()
                                 }
