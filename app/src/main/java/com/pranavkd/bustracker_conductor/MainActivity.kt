@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -69,6 +70,7 @@ class MainActivity : ComponentActivity() {
                 startDes = "bus_info"
             }
             val apiHelper = ApiHelper()
+            val chatModel = ViewModelProvider(this).get(ChatModel::class.java)
             BusTrackerConductorTheme {
                 val navController = rememberNavController()
                 Scaffold(
@@ -96,7 +98,7 @@ class MainActivity : ComponentActivity() {
                             BusInfo()
                         }
                         composable("chat"){
-                            ChatScreen()
+                            ChatScreen(chatModel, condutorId.value)
                         }
                         composable("login") {
                             LoginScreen(sharedPreferences, apiHelper,
