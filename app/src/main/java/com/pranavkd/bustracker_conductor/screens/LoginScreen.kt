@@ -22,7 +22,7 @@ fun LoginScreen(
     loginSuccess: () -> Unit,
 ) {
     var conductorId by remember { mutableStateOf("conductor1") }
-    var password by remember { mutableStateOf("password123") }
+    var password by remember { mutableStateOf("pranav123") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()

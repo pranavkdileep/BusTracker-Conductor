@@ -12,7 +12,7 @@ import org.json.JSONObject
 import java.io.IOException
 
 class ApiHelper {
-    private val baseUrl = "http://207.211.188.157:4578"
+    private val baseUrl = "https://bus-tracker-backend-one.vercel.app"
     private val client = OkHttpClient()
 
     fun login(conductorId: String, password: String,callback : (error: String?, response: String?) -> Unit) {
@@ -54,7 +54,7 @@ class ApiHelper {
     fun sendMessageConductorToAll(conductorId: String, messageText:String,callback: (error: String?, response: JSONObject?) -> Unit){
 
         val mediaType = "application/json".toMediaType()
-        val body = "{\n  \"senderType\": \"conductor\",\n  \"senderConductorId\": \"$conductorId\",\n  \"receiverType\": \"all\",\n  \"receiverBookingId\": \"\",\n  \"messageText\": \"$messageText\"\n}".toRequestBody(mediaType)
+        val body = "{\n  \"sendertype\": \"conductor\",\n  \"senderconductorid\": \"$conductorId\",\n  \"receivertype\": \"all\",\n  \"receiverbookingid\": \"\",\n  \"messagetext\": \"$messageText\"\n}".toRequestBody(mediaType)
         val request = Request.Builder()
             .url("$baseUrl/api/admin/chat")
             .post(body)
@@ -85,7 +85,7 @@ class ApiHelper {
 
     fun sendMessageConductorToUser(conductorId: String, messageText:String,bookingId:String,callback: (error: String?, response: JSONObject?) -> Unit){
         val mediaType = "application/json".toMediaType()
-        val body = "{\n  \"senderType\": \"conductor\",\n  \"senderConductorId\": \"$conductorId\",\n  \"receiverType\": \"user\",\n  \"receiverBookingId\": \"$bookingId\",\n  \"messageText\": \"$messageText\"\n}".toRequestBody(mediaType)
+        val body = "{\n  \"sendertype\": \"conductor\",\n  \"senderconductorid\": \"$conductorId\",\n  \"receivertype\": \"user\",\n  \"receiverbookingid\": \"$bookingId\",\n  \"messagetext\": \"$messageText\"\n}".toRequestBody(mediaType)
         val request = Request.Builder()
             .url("$baseUrl/api/admin/chat")
             .post(body)
