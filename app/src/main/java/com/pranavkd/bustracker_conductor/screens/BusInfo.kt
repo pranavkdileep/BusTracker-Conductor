@@ -18,9 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.pranavkd.bustracker_conductor.passenger
 import com.pranavkd.bustracker_conductor.ui.theme.BusTrackerConductorTheme
 
 @Composable
@@ -29,6 +31,7 @@ fun BusInfo(busId:String) {
         BusManagementApp()
     }
 }
+
 
 @Composable
 fun BusManagementApp() {
@@ -43,7 +46,23 @@ fun BusManagementApp() {
     var stateText by remember { mutableStateOf("") }
 
     val routes = listOf("Thrissur", "Ollur", "Puthukad", "Chalakudi", "Angamali", "Perumbavour")
-    val passengers = List(7) { "BK-6755 Pranav" }
+
+    // Sample passenger data
+    val passengers = List(7) { index ->
+        passenger(
+            bookingId = "BK-6755",
+            fullname = "Pranav Kumar",
+            email = "pranav.kumar${index+1}@example.com",
+            phone = "9876543${100+index}",
+            gender = if (index % 2 == 0) "Male" else "Female",
+            source = "Thrissur",
+            destination = when (index % 3) {
+                0 -> "Angamali"
+                1 -> "Chalakudi"
+                else -> "Perumbavour"
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -260,9 +279,7 @@ fun RoutesContent(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (isSelected) yellow else lightPurple)
-                            .border(2.dp, yellow, CircleShape),
-
-                    )
+                            .border(2.dp, yellow, CircleShape),)
                 }
             }
         }
@@ -271,10 +288,13 @@ fun RoutesContent(
 
 @Composable
 fun PassengersContent(
-    passengers: List<String>,
+    passengers: List<passenger>,
     lightPurple: Color,
     darkPurple: Color
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedPassenger by remember { mutableStateOf<passenger?>(null) }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -297,13 +317,16 @@ fun PassengersContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = passenger,
+                        text = "${passenger.bookingId} ${passenger.fullname}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
 
                     Button(
-                        onClick = { },
+                        onClick = {
+                            selectedPassenger = passenger
+                            showDialog = true
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = darkPurple),
                         shape = CircleShape
                     ) {
@@ -313,4 +336,162 @@ fun PassengersContent(
             }
         }
     }
+
+    // Show passenger details dialog if a passenger is selected
+    if (showDialog && selectedPassenger != null) {
+        PassengerDetailsDialog(
+            passenger = selectedPassenger!!,
+            onDismiss = { showDialog = false },
+            lightPurple = lightPurple,
+            darkPurple = darkPurple
+        )
+    }
 }
+
+@Composable
+fun PassengerDetailsDialog(
+    passenger: passenger,
+    onDismiss: () -> Unit,
+    lightPurple: Color,
+    darkPurple: Color
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                // Header
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(lightPurple)
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Passenger Details",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Passenger information
+                PassengerInfoItem("Booking ID", passenger.bookingId)
+                PassengerInfoItem("Full Name", passenger.fullname)
+                PassengerInfoItem("Email", passenger.email)
+                PassengerInfoItem("Phone", passenger.phone)
+                PassengerInfoItem("Gender", passenger.gender)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Journey details
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFF0F0F0))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Journey Details",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "From",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+                                Text(
+                                    text = passenger.source,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "To",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Text(
+                                    text = passenger.destination,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Close button
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = darkPurple),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Close")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PassengerInfoItem(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+
+    Divider(
+        modifier = Modifier.padding(vertical = 8.dp),
+        color = Color(0xFFEEEEEE)
+    )
+}
+
