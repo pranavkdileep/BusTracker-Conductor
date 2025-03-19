@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
                     },
                     topBar = {
                         if(startDes != "login"){
-                            TopAppBar(condutorId.value, busId.value,sharedPreferences,navController)
+                            TopAppBar(condutorId.value,sharedPreferences,navController)
                         }
                     }
                 ) { innerPadding ->
@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ){
                         composable("bus_info"){
-                            BusInfo()
+                            BusInfo(busId.value)
                         }
                         composable("chat"){
                             ChatScreen(chatModel, condutorId.value)
@@ -147,7 +147,6 @@ fun BottomNav(navController: NavController) {
 @Composable
 fun TopAppBar(
     condutorId: String,
-    busId: String,
     sharedPreferences: SharedPreferences,
     navController: NavHostController
 ) {
@@ -160,12 +159,6 @@ fun TopAppBar(
             Column {
                 Text(
                     "Conductor : $condutorId",
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = MaterialTheme.typography.bodyMedium.fontSize
-                )
-                Text(
-                    "Bus Id : $busId",
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = MaterialTheme.typography.bodyMedium.fontSize
