@@ -1,8 +1,9 @@
 package com.pranavkd.bustracker_conductor.screens
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,13 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.pranavkd.bustracker_conductor.Businfo
+import com.pranavkd.bustracker_conductor.Managers
 import com.pranavkd.bustracker_conductor.Routes
 import com.pranavkd.bustracker_conductor.passenger
 import com.pranavkd.bustracker_conductor.ui.theme.BusTrackerConductorTheme
@@ -31,57 +33,81 @@ import com.pranavkd.bustracker_conductor.ui.theme.BusTrackerConductorTheme
 
 
 @Composable
-fun BusInfo(busId: String) {
+fun BusInfo(conductorId: String) {
     BusTrackerConductorTheme {
-        BusManagementApp()
+        val managers = Managers()
+        var loading by remember { mutableStateOf(false) }
+        var busInfo by remember { mutableStateOf<Businfo?>(null) }
+        var passengers by remember { mutableStateOf<List<passenger>?>(null) }
+        if(conductorId != ""){
+            if(busInfo == null && passengers == null){
+                loading = true
+                managers.loadDataHome(conductorId) { error, bus, pass ->
+                    if(error != null){
+                        loading = false
+                    }
+                    else{
+                        busInfo = bus
+                        passengers = pass
+                        loading = false
+                    }
+                }
+            }
+        }
+        if(loading) {
+            // Show loading screen
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+
+                CircularProgressIndicator()
+            }
+        }else{
+            if(busInfo != null && passengers != null){
+                BusManagementApp(conductorId,busInfo!!, passengers!!,managers,setLoading = {loading = it},
+                    updateBusinfo = {
+                        if(conductorId != ""){
+                                loading = true
+                                managers.loadDataHome(conductorId) { error, bus, pass ->
+                                    if(error != null){
+                                        loading = false
+                                    }
+                                    else{
+                                        busInfo = bus
+                                        passengers = pass
+                                        loading = false
+                                    }
+                                }
+
+                        }
+                    }
+                    )
+            }
+        }
     }
 }
 
 @Composable
-fun BusManagementApp() {
+fun BusManagementApp(conductorId: String,busInfo: Businfo, passengers: List<passenger>,managers: Managers,setLoading : (Boolean) -> Unit,updateBusinfo: () -> Unit) {
     val lightPurple = Color(0xFFB2A5FF)
     val veryLightPurple = Color(0xFFDAD2FF)
     val darkPurple = Color(0xFF493D9E)
     val yellow = Color(0xFFFFF2AF)
     val lightGray = Color(0xFFD9D9D9)
 
+
+
     var activeTab by remember { mutableStateOf("Routes") }
 
-    // Initialize with default routes
-    val routeNames = listOf("Thrissur", "Ollur", "Puthukad", "Chalakudi", "Angamali", "Perumbavour")
-    val initialRoutes = routeNames.map { Routes(name = it, iscompleted = false) }
+    var busInfo by remember { mutableStateOf(busInfo) }
 
-    // Bus info state
-    var busInfo by remember {
-        mutableStateOf(
-            Businfo(
-                busId = "MC-2097",
-                busName = "TDC Thodupuzha",
-                state = "",
-                routes = initialRoutes
-            )
-        )
-    }
 
     // Track completed routes count
     val completedRoutesCount = busInfo.routes.count { it.iscompleted }
 
-    // Sample passenger data
-    val passengers = List(7) { index ->
-        passenger(
-            bookingId = "BK-6755",
-            fullname = "Pranav Kumar",
-            email = "pranav.kumar${index+1}@example.com",
-            phone = "9876543${100+index}",
-            gender = if (index % 2 == 0) "Male" else "Female",
-            source = "Thrissur",
-            destination = when (index % 3) {
-                0 -> "Angamali"
-                1 -> "Chalakudi"
-                else -> "Perumbavour"
-            }
-        )
-    }
+    var passengers by remember { mutableStateOf(passengers) }
+    var context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -99,8 +125,18 @@ fun BusManagementApp() {
                     busInfo = busInfo.copy(state = newState)
                 },
                 onSaveState = {
-                    // Here you would typically save to database or API
-                    // For now, we just update the local state
+                    setLoading(true)
+                    managers.updateState(conductorId,busInfo.state) { error ->
+                        if(error != null){
+                            //Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        }
+                        else{
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(context, "State updated successfully", Toast.LENGTH_SHORT).show()
+                            }                        }
+                        setLoading(false)
+                        updateBusinfo()
+                    }
                 },
                 lightPurple = lightPurple,
                 darkPurple = darkPurple,
@@ -135,9 +171,17 @@ fun BusManagementApp() {
                         busInfo = busInfo.copy(routes = updatedRoutes)
                     },
                     onSaveRoutes = {
-                        // Here you would typically save to database or API
-                        // For now, we just log the completed routes
-                        println("Saved routes. Completed: $completedRoutesCount")
+                        setLoading(true)
+                        managers.updateNoOfStopes(conductorId,busInfo.routes.count { it.iscompleted }) { error ->
+                            if(error != null){
+                                //Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            }
+                            else{
+                                //Toast.makeText(context, "Routes updated successfully", Toast.LENGTH_SHORT).show()
+                            }
+                            setLoading(false)
+                            updateBusinfo()
+                        }
                     },
                     completedCount = completedRoutesCount,
                     lightPurple = lightPurple,
@@ -299,7 +343,7 @@ fun RoutesContent(
                     colors = ButtonDefaults.buttonColors(containerColor = darkPurple),
                     shape = CircleShape
                 ) {
-                    Text("Save")
+                    Text("Save Routes")
                 }
             }
 

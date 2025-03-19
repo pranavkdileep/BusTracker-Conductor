@@ -21,8 +21,8 @@ fun LoginScreen(
     apiHelper: ApiHelper,
     loginSuccess: () -> Unit,
 ) {
-    var conductorId by remember { mutableStateOf("conductor1") }
-    var password by remember { mutableStateOf("pranav123") }
+    var conductorId by remember { mutableStateOf("pranavkd") }
+    var password by remember { mutableStateOf("Pranavkd44#") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()

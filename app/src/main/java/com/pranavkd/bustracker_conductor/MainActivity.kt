@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ){
                         composable("bus_info"){
-                            BusInfo(busId.value)
+                            BusInfo(condutorId.value)
                         }
                         composable("chat"){
                             ChatScreen(chatModel, condutorId.value)
