@@ -19,19 +19,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.pranavkd.bustracker_conductor.Businfo
+import com.pranavkd.bustracker_conductor.Routes
 import com.pranavkd.bustracker_conductor.passenger
 import com.pranavkd.bustracker_conductor.ui.theme.BusTrackerConductorTheme
 
+
+
 @Composable
-fun BusInfo(busId:String) {
+fun BusInfo(busId: String) {
     BusTrackerConductorTheme {
         BusManagementApp()
     }
 }
-
 
 @Composable
 fun BusManagementApp() {
@@ -42,10 +46,25 @@ fun BusManagementApp() {
     val lightGray = Color(0xFFD9D9D9)
 
     var activeTab by remember { mutableStateOf("Routes") }
-    var selectedRoute by remember { mutableStateOf("") }
-    var stateText by remember { mutableStateOf("") }
 
-    val routes = listOf("Thrissur", "Ollur", "Puthukad", "Chalakudi", "Angamali", "Perumbavour")
+    // Initialize with default routes
+    val routeNames = listOf("Thrissur", "Ollur", "Puthukad", "Chalakudi", "Angamali", "Perumbavour")
+    val initialRoutes = routeNames.map { Routes(name = it, iscompleted = false) }
+
+    // Bus info state
+    var busInfo by remember {
+        mutableStateOf(
+            Businfo(
+                busId = "MC-2097",
+                busName = "TDC Thodupuzha",
+                state = "",
+                routes = initialRoutes
+            )
+        )
+    }
+
+    // Track completed routes count
+    val completedRoutesCount = busInfo.routes.count { it.iscompleted }
 
     // Sample passenger data
     val passengers = List(7) { index ->
@@ -75,11 +94,17 @@ fun BusManagementApp() {
         ) {
             // Bus Info Card
             BusInfoCard(
+                busInfo = busInfo,
+                onStateChange = { newState ->
+                    busInfo = busInfo.copy(state = newState)
+                },
+                onSaveState = {
+                    // Here you would typically save to database or API
+                    // For now, we just update the local state
+                },
                 lightPurple = lightPurple,
                 darkPurple = darkPurple,
-                lightGray = lightGray,
-                stateText = stateText,
-                onStateTextChange = { stateText = it }
+                lightGray = lightGray
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -97,9 +122,24 @@ fun BusManagementApp() {
             // Content based on active tab
             when (activeTab) {
                 "Routes" -> RoutesContent(
-                    routes = routes,
-                    selectedRoute = selectedRoute,
-                    onRouteSelected = { selectedRoute = it },
+                    routes = busInfo.routes,
+                    onRouteToggle = { routeName ->
+                        // Update the route's completion status
+                        val updatedRoutes = busInfo.routes.map { route ->
+                            if (route.name == routeName) {
+                                route.copy(iscompleted = !route.iscompleted)
+                            } else {
+                                route
+                            }
+                        }
+                        busInfo = busInfo.copy(routes = updatedRoutes)
+                    },
+                    onSaveRoutes = {
+                        // Here you would typically save to database or API
+                        // For now, we just log the completed routes
+                        println("Saved routes. Completed: $completedRoutesCount")
+                    },
+                    completedCount = completedRoutesCount,
                     lightPurple = lightPurple,
                     darkPurple = darkPurple,
                     yellow = yellow
@@ -116,11 +156,12 @@ fun BusManagementApp() {
 
 @Composable
 fun BusInfoCard(
+    busInfo: Businfo,
+    onStateChange: (String) -> Unit,
+    onSaveState: () -> Unit,
     lightPurple: Color,
     darkPurple: Color,
-    lightGray: Color,
-    stateText: String,
-    onStateTextChange: (String) -> Unit
+    lightGray: Color
 ) {
     Box(
         modifier = Modifier
@@ -131,12 +172,12 @@ fun BusInfoCard(
     ) {
         Column {
             Text(
-                text = "Bus ID : MC-2097",
+                text = "Bus ID : ${busInfo.busId}",
                 color = Color.Black,
                 fontSize = 14.sp
             )
             Text(
-                text = "Bus Name : TDC Thodupuzha",
+                text = "Bus Name : ${busInfo.busName}",
                 color = Color.Black,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -153,8 +194,8 @@ fun BusInfoCard(
                 )
 
                 TextField(
-                    value = stateText,
-                    onValueChange = onStateTextChange,
+                    value = busInfo.state,
+                    onValueChange = onStateChange,
                     placeholder = { Text("Enter State") },
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = lightGray,
@@ -170,7 +211,7 @@ fun BusInfoCard(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Button(
-                    onClick = { },
+                    onClick = onSaveState,
                     colors = ButtonDefaults.buttonColors(containerColor = darkPurple),
                     shape = CircleShape,
                     modifier = Modifier.padding(start = 8.dp)
@@ -223,9 +264,10 @@ fun TabNavigation(
 
 @Composable
 fun RoutesContent(
-    routes: List<String>,
-    selectedRoute: String,
-    onRouteSelected: (String) -> Unit,
+    routes: List<Routes>,
+    onRouteToggle: (String) -> Unit,
+    onSaveRoutes: () -> Unit,
+    completedCount: Int,
     lightPurple: Color,
     darkPurple: Color,
     yellow: Color
@@ -237,49 +279,61 @@ fun RoutesContent(
             .background(Color.Transparent)
             .padding(16.dp)
     ) {
-        Button(
-            onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = darkPurple),
-            shape = CircleShape,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(bottom = 16.dp)
-        ) {
-            Text("Save")
-        }
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Completed: $completedCount/${routes.size}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = darkPurple
+                )
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 48.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(routes) { route ->
-                val isSelected = selectedRoute == route
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(lightPurple)
-                        .clickable { onRouteSelected(route) }
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Button(
+                    onClick = onSaveRoutes,
+                    colors = ButtonDefaults.buttonColors(containerColor = darkPurple),
+                    shape = CircleShape
                 ) {
-                    Text(
-                        text = route,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text("Save")
+                }
+            }
 
-                    // Custom Radio Button
-                    Box(
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(routes) { route ->
+                    Row(
                         modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(if (isSelected) yellow else lightPurple)
-                            .border(2.dp, yellow, CircleShape),)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(lightPurple)
+                            .clickable { onRouteToggle(route.name) }
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = route.name,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        // Custom Radio Button
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(if (route.iscompleted) yellow else lightPurple)
+                                .border(2.dp, yellow, CircleShape)
+                                .clickable { onRouteToggle(route.name) }
+                        )
+                    }
                 }
             }
         }
@@ -489,9 +543,8 @@ fun PassengerInfoItem(label: String, value: String) {
         )
     }
 
-    Divider(
+    HorizontalDivider(
         modifier = Modifier.padding(vertical = 8.dp),
         color = Color(0xFFEEEEEE)
     )
 }
-
